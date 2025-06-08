@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codetrest</title>
+    <script src="./tailwind.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="./prism.js"></script>
+    <link href="./prism.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Source+Sans+Pro:wght@300;400;600;700&display=swap');
+
+        :root {
+            --base03: #002b36;
+            --base02: #073642;
+            --base01: #586e75;
+            --base00: #657b83;
+            --base0: #839496;
+            --base1: #93a1a1;
+            --base2: #eee8d5;
+            --base3: #fdf6e3;
+            --yellow: #b58900;
+            --orange: #cb4b16;
+            --red: #dc322f;
+            --magenta: #d33682;
+            --violet: #6c71c4;
+            --blue: #268bd2;
+            --cyan: #2aa198;
+            --green: #859900;
+        }
+
+        body {
+            font-family: 'Source Sans Pro', sans-serif;
+            background-color: var(--base3);
+            color: var(--base00);
+        }
+
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+
+        .markdown-content img {
+            max-width: 100%;
+        }
+
+        .markdown-content pre {
+            border-radius: 0.375rem;
+            margin-top: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .tab-active {
+            border-bottom: 2px solid var(--blue);
+            color: var(--blue);
+        }
+
+        .tag-chip {
+            transition: all 0.2s ease;
+        }
+
+        .tag-chip:hover {
+            transform: translateY(-1px);
+        }
+
+        .card-hover {
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--base2);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--base1);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--base01);
+        }
+
+        /* Animation for newly added snippets */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .new-snippet {
+            animation: fadeIn 0.3s ease-out;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="bg-[#eee8d5] border-b border-[#93a1a1]">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center mb-4 md:mb-0">
+                    <i class="fas fa-code text-3xl text-[#268bd2] mr-3"></i>
+                    <h1 class="text-2xl font-bold text-[#073642]">Codetrest</h1>
+                </div>
+                <div class="relative w-full md:w-96 flex items-center">
+                    <input type="text" id="searchInput" placeholder="Search snippets..."
+                        class="w-full pl-10 pr-4 py-2 rounded-lg border border-[#93a1a1] focus:outline-none focus:ring-2 focus:ring-[#268bd2] bg-[#fdf6e3] text-[#657b83]">
+                    <i class="fas fa-search absolute left-3 top-3 text-[#93a1a1]"></i>
+
+                    <span id="folderStatus" class="ml-2 text-xs text-[#586e75]"></span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-6 flex flex-col md:flex-row">
+        <!-- Sidebar -->
+        <aside class="w-full md:w-64 mb-6 md:mb-0 md:mr-6">
+            <div class="bg-[#eee8d5] rounded-lg p-4 shadow-sm border border-[#93a1a1]">
+                <h2 class="font-semibold text-lg mb-4 text-[#073642]">Filters</h2>
+                <div class="mb-6">
+                    <h3 class="font-medium mb-2 text-[#586e75]">Tags</h3>
+                    <div id="tagFilters" class="flex flex-wrap gap-2">
+                        <!-- Tags will be populated here -->
+                    </div>
+                </div>
+                <div>
+                    <h3 class="font-medium mb-2 text-[#586e75]">Sort by</h3>
+                    <select id="sortSelect"
+                        class="w-full p-2 border border-[#93a1a1] rounded bg-[#fdf6e3] focus:outline-none focus:ring-2 focus:ring-[#268bd2]">
+                        <option value="newest">Newest first</option>
+                        <option value="oldest">Oldest first</option>
+                        <option value="title-asc">Title (A-Z)</option>
+                        <option value="title-desc">Title (Z-A)</option>
+                    </select>
+                </div>
+                <button id="addSnippetBtn"
+                    class="mt-6 w-full bg-[#268bd2] hover:bg-[#1e6fad] text-white py-2 px-4 rounded-lg transition flex items-center justify-center">
+                    <i class="fas fa-plus mr-2"></i> Add Snippet
+                </button>
+            </div>
+
+            <div class="mt-6 bg-[#eee8d5] rounded-lg p-4 shadow-sm border border-[#93a1a1]">
+                <h3 class="font-medium mb-3 text-[#586e75]">Quick Stats</h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-[#fdf6e3] p-2 rounded border border-[#93a1a1]">
+                        <p class="text-xs text-[#586e75]">Total Snippets</p>
+                        <p class="font-bold text-lg" id="totalSnippets">0</p>
+                    </div>
+                    <div class="bg-[#fdf6e3] p-2 rounded border border-[#93a1a1]">
+                        <p class="text-xs text-[#586e75]">Total Tags</p>
+                        <p class="font-bold text-lg" id="totalTags">0</p>
+                    </div>
+                    <div class="bg-[#fdf6e3] p-2 rounded border border-[#93a1a1]">
+                        <p class="text-xs text-[#586e75]">Updated Today</p>
+                        <p class="font-bold text-lg" id="updatedToday">0</p>
+                    </div>
+                    <div class="bg-[#fdf6e3] p-2 rounded border border-[#93a1a1]">
+                        <p class="text-xs text-[#586e75]">Last Added</p>
+                        <p class="font-bold text-xs truncate" id="lastAdded">None</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="flex-grow flex flex-col">
+            <!-- Tabs -->
+            <div class="flex border-b border-[#93a1a1] mb-6">
+                <button id="allTab" class="tab-active px-4 py-2 font-medium text-[#073642]">All Snippets</button>
+                <button id="favoritesTab" class="px-4 py-2 font-medium text-[#073642]">Favorites</button>
+                <button id="recentTab" class="px-4 py-2 font-medium text-[#073642]">Recently Viewed</button>
+            </div>
+
+            <!-- Snippets List -->
+            <div id="snippetsContainer" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Snippet cards will be populated here -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="flex-grow flex flex-col items-center justify-center text-center py-16">
+                <i class="fas fa-code text-6xl text-[#93a1a1] mb-4"></i>
+                <h3 class="text-xl font-medium text-[#586e75] mb-2">No snippets found</h3>
+                <p class="text-[#93a1a1] mb-6">Create your first snippet or adjust your search.</p>
+                <button id="addFirstSnippetBtn"
+                    class="bg-[#268bd2] hover:bg-[#1e6fad] text-white py-2 px-6 rounded-lg transition">
+                    Add Snippet
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Snippet Modal -->
+    <div id="snippetModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-[#eee8d5] rounded-lg w-full max-w-3xl max-h-[90vh] mx-4 overflow-hidden flex flex-col"
+            style="min-height: 500px;">
+            <div class="bg-[#073642] p-4 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-[#93a1a1]" id="modalTitle">Add New Snippet</h3>
+                <button id="closeModalBtn" class="text-[#93a1a1] hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-4 flex-grow overflow-auto">
+                <form id="snippetForm">
+                    <input type="hidden" id="snippetId">
+                    <div class="mb-4">
+                        <label for="snippetTitle" class="block text-sm font-medium text-[#586e75] mb-1">Title</label>
+                        <input type="text" id="snippetTitle" required
+                            class="w-full p-2 border border-[#93a1a1] rounded bg-[#fdf6e3] focus:outline-none focus:ring-2 focus:ring-[#268bd2]">
+                    </div>
+                    <div class="mb-4">
+                        <label for="snippetDesc"
+                            class="block text-sm font-medium text-[#586e75] mb-1">Description</label>
+                        <textarea id="snippetDesc" rows="3"
+                            class="w-full p-2 border border-[#93a1a1] rounded bg-[#fdf6e3] focus:outline-none focus:ring-2 focus:ring-[#268bd2]"></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label for="snippetTags" class="block text-sm font-medium text-[#586e75] mb-1">Tags (comma
+                            separated)</label>
+                        <input type="text" id="snippetTags"
+                            class="w-full p-2 border border-[#93a1a1] rounded bg-[#fdf6e3] focus:outline-none focus:ring-2 focus:ring-[#268bd2]"
+                            placeholder="Comma separated tags..">
+                    </div>
+                    <div class="mb-4">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-sm font-medium text-[#586e75]">Content</label>
+                        </div>
+                        <textarea id="snippetContent" rows="10" required
+                            class="w-full p-2 border border-[#93a1a1] rounded bg-[#fdf6e3] font-mono text-sm focus:outline-none focus:ring-2 focus:ring-[#268bd2]"
+                            placeholder="Markdown content goes here.."></textarea>
+                    </div>
+                </form>
+
+                <!-- Preview Area -->
+                <div id="previewArea" class="mt-4 p-4 bg-white rounded markdown-content border border-[#93a1a1]"></div>
+            </div>
+            <div class="p-4 border-t border-[#93a1a1] bg-[#fdf6e3] flex justify-end space-x-2">
+                <button id="deleteSnippetBtn"
+                    class="hidden bg-[#dc322f] hover:bg-[#bd2a27] text-white py-2 px-4 rounded-lg transition">
+                    Delete
+                </button>
+                <button id="cancelBtn"
+                    class="bg-[#93a1a1] hover:bg-[#839496] text-white py-2 px-4 rounded-lg transition">
+                    Cancel
+                </button>
+                <button type="submit" form="snippetForm"
+                    class="bg-[#859900] hover:bg-[#738a00] text-white py-2 px-4 rounded-lg transition">
+                    Save
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Snippet Modal -->
+    <div id="viewModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-[#eee8d5] rounded-lg w-full max-w-4xl max-h-[90vh] mx-4 overflow-hidden flex flex-col">
+            <div class="bg-[#073642] p-4 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-[#93a1a1]" id="viewModalTitle">Snippet Details</h3>
+                <button id="closeViewModalBtn" class="text-[#93a1a1] hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-auto">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-[#073642] mb-2" id="viewSnippetTitle"></h2>
+                        <p class="text-[#586e75]" id="viewSnippetDesc"></p>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button id="editSnippetBtn"
+                            class="bg-[#268bd2] hover:bg-[#1e6fad] text-white py-1 px-3 rounded text-sm">
+                            <i class="fas fa-edit mr-1"></i> Edit
+                        </button>
+                        <button id="favoriteBtn"
+                            class="bg-[#b58900] hover:bg-[#9c7b00] text-white py-1 px-3 rounded text-sm">
+                            <i class="far fa-star mr-1"></i> Favorite
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap gap-2 mb-6" id="viewSnippetTags"></div>
+
+                <div class="bg-white p-4 rounded-lg markdown-content" id="viewSnippetContent"></div>
+
+                <div class="mt-6 pt-4 border-t border-[#93a1a1] text-sm text-[#586e75]">
+                    <p>Last updated: <span id="viewSnippetUpdated"></span></p>
+                </div>
+            </div>
+            <div class="p-4 border-t border-[#93a1a1] bg-[#fdf6e3] flex justify-end">
+                <button id="closeViewModalBtn2"
+                    class="bg-[#93a1a1] hover:bg-[#839496] text-white py-2 px-4 rounded-lg transition">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="./main.js"></script>
+</body>
+</html>

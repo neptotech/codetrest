@@ -1,0 +1,5 @@
+node_modules
+.vscode/
+
+.release/*
+node_modules/*
