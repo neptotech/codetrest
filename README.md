@@ -1,11 +1,15 @@
 # Meet Codetrest — Your Ultimate Markdown-Powered Notes Hub
-
 Experience a sleek, modern UI designed for developers and thinkers. Quickly save code snippets, ideas, or anything else — all with full Markdown support. Easily search, tag, and organize your content by date.
 
 Fast. Clean. Smart.
 Try Codetrest today — and level up how you save and find what matters.
 
 ---
+## Download
+Currently prebuilt portable and installer(32bit and 64bit) are provided for windows. Though this application is built for cross platform support. It can be easily built with github actions and soon mac and linux binaries will be released.
+
+Being a student I would like if you could buy this supporting me via Gumroad: [download here](https://electrobyte6.gumroad.com/l/onbsd) Small prices still matter to me.
+But that doesn't mean the software is paid, the source code is right above to be built, and you can get the binary for free via an adwall: [download here](https://ouo.io/pC0cFb)
 
 ## Installation & Setup
 
@@ -21,12 +25,12 @@ Try Codetrest today — and level up how you save and find what matters.
 
 ### Start (Development)
 ```
-npm tauri dev
+npm run tauri dev
 ```
 
 ### Build (Production)
 ```
-npm tauri build
+npm run tauri build
 ```
 
 ---
