@@ -24,6 +24,7 @@
     "targets": "all",
     "icon": [
       "icons/icon.ico"
-    ]
+    ],
+    "publisher": "redoc"
   }
 }

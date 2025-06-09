@@ -488,6 +488,29 @@ function updateLivePreview() {
 //         shell.openExternal(e.target.href);
 //     }
 // });
+// Intercept link clicks in previewArea and viewSnippetContent to open in system browser
+
+function handleExternalLinks(container) {
+    container.addEventListener('click', async function (e) {
+        const a = e.target.closest('a');
+        if (a && a.href && a.target !== '_blank') {
+            e.preventDefault();
+            try {
+                await window.__TAURI__.opener.openUrl(a.href);
+            } catch (err) {
+                console.error('Failed to open link externally:', err);
+            }
+        }
+    });
+}
+
+// Attach after DOM is ready
+window.addEventListener('DOMContentLoaded', () => {
+    handleExternalLinks(previewArea);
+    const viewContent = document.getElementById('viewSnippetContent');
+    if (viewContent) handleExternalLinks(viewContent);
+});
+
 // Event listeners
 searchInput.addEventListener('input', renderAllSnippets);
 sortSelect.addEventListener('change', renderAllSnippets);
