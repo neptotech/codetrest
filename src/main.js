@@ -1,4 +1,5 @@
 const { invoke } = window.__TAURI__.core;
+import { renderMarkdown, debounce, enhanceCodeBlocks } from './markdown-renderer.js';
 
 // DOM elements
 const searchInput = document.getElementById('searchInput');
@@ -38,8 +39,53 @@ let activeModalSnippetId = null;
 // Add this variable at the top with other state variables:
 let activeTags = []; // Array of selected tags
 
+// Theme management
+const themeToggle = document.getElementById('themeToggle');
+let currentTheme = localStorage.getItem('theme') || 'light';
+
+function setTheme(theme) {
+    currentTheme = theme;
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    
+    // Update toggle button icon
+    const icon = themeToggle.querySelector('i');
+    if (theme === 'dark') {
+        icon.classList.remove('fa-moon');
+        icon.classList.add('fa-sun');
+        themeToggle.title = 'Switch to light theme';
+    } else {
+        icon.classList.remove('fa-sun');
+        icon.classList.add('fa-moon');
+        themeToggle.title = 'Switch to dark theme';
+    }
+    
+    // Toggle highlight.js themes
+    const lightTheme = document.getElementById('highlight-theme-light');
+    const darkTheme = document.getElementById('highlight-theme-dark');
+    if (theme === 'dark') {
+        lightTheme.disabled = true;
+        darkTheme.disabled = false;
+    } else {
+        lightTheme.disabled = false;
+        darkTheme.disabled = true;
+    }
+    
+    // Re-render current preview if open
+    if (previewArea && snippetContent && snippetContent.value) {
+        updateLivePreview();
+    }
+}
+
+function toggleTheme() {
+    setTheme(currentTheme === 'light' ? 'dark' : 'light');
+}
+
 // Initialize the app
 function init() {
+    // Apply saved theme
+    setTheme(currentTheme);
+    
     renderAllSnippets();
     renderTagFilters();
     updateStats();
@@ -275,6 +321,8 @@ function showAddSnippetModal() {
     deleteSnippetBtn.classList.add('hidden');
     previewArea.innerHTML = '';
     snippetModal.classList.remove('hidden');
+    // Initialize preview (empty in this case)
+    updateLivePreview();
 }
 
 // Show edit snippet modal
@@ -289,9 +337,9 @@ function showEditSnippetModal(snippetId) {
     document.getElementById('snippetTags').value = snippet.tags.join(', ');
     document.getElementById('snippetContent').value = snippet.content;
     deleteSnippetBtn.classList.remove('hidden');
-    previewArea.innerHTML = '';
     snippetModal.classList.remove('hidden');
 
+    // Render the initial preview with the snippet's content
     updateLivePreview();
 }
 
@@ -320,11 +368,11 @@ function showViewSnippetModal(snippetId) {
 
     // Update content with markdown rendering
     const contentContainer = document.getElementById('viewSnippetContent');
-    contentContainer.innerHTML = marked.parse(snippet.content);
-
-    // Highlight code blocks
-    contentContainer.querySelectorAll('pre code').forEach((block) => {
-        Prism.highlightElement(block);
+    renderMarkdown(snippet.content).then(html => {
+        contentContainer.innerHTML = html;
+        enhanceCodeBlocks(contentContainer);
+    }).catch(err => {
+        contentContainer.textContent = 'Error rendering markdown: ' + err;
     });
 
     // Update date
@@ -470,16 +518,21 @@ function generateId() {
 
 // Live markdown preview
 const snippetContent = document.getElementById('snippetContent');
-snippetContent.addEventListener('input', updateLivePreview);
 
-function updateLivePreview() {
+// Function to update the live preview
+async function updateLivePreview() {
     const content = snippetContent.value;
-    previewArea.innerHTML = marked.parse(content);
-    // Highlight code blocks
-    previewArea.querySelectorAll('pre code').forEach((block) => {
-        Prism.highlightElement(block);
-    });
+    try {
+        const html = await renderMarkdown(content);
+        previewArea.innerHTML = html;
+        enhanceCodeBlocks(previewArea);
+    } catch (err) {
+        previewArea.textContent = 'Error rendering markdown: ' + err;
+    }
 }
+
+// Debounced version for input events
+snippetContent.addEventListener('input', debounce(updateLivePreview, 120));
 // const { shell } = require('electron');
 
 // previewArea.addEventListener('click', function (e) {
@@ -516,6 +569,7 @@ searchInput.addEventListener('input', renderAllSnippets);
 sortSelect.addEventListener('change', renderAllSnippets);
 addSnippetBtn.addEventListener('click', showAddSnippetModal);
 addFirstSnippetBtn.addEventListener('click', showAddSnippetModal);
+themeToggle.addEventListener('click', toggleTheme);
 
 closeModalBtn.addEventListener('click', () => snippetModal.classList.add('hidden'));
 closeViewModalBtn.addEventListener('click', () => viewModal.classList.add('hidden'));
