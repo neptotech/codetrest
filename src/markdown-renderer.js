@@ -23,6 +23,7 @@ export async function renderMarkdown(md) {
   // Try pretty-code first for richer highlighting with Shiki
   const prettyOptions = {
     theme: isDark ? "material-theme-darker" : "solarized-light",
+    bypassInlineCode: true,
     keepBackground: true,
     defaultLang: "shell",
     tokensMap: {
