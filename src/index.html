@@ -16,11 +16,13 @@
             /* Solarized Light (Default) */
             --base02: #073642;
             --base04:#073642;
+            --base04:#073642;
             --base01: #586e75;
             --base00: #657b83;
             --base1: #93a1a1;
             --base2: #eee8d5;
             --base3: #fdf6e3;
+            --base5: #fdf6e3;
             --base5: #fdf6e3;
             --yellow: #b58900;
             --orange: #cb4b16;
@@ -31,10 +33,19 @@
             --cyan: #2aa198;
             --green: #859900;
             --code-font: 'Fira Code';
+            --code-font: 'Fira Code';
         }
 
         [data-theme="dark"] {
             /* Atom Material Dark Theme */
+            --base02: #cccccc;
+            --base04:#20292e;
+            --base01: #afb6b9;
+            --base00: #c5c5c5;
+            --base1: #7db2c5;
+            --base2: #232e33;
+            --base3: #263238; 
+            --base5: #cfd8dc;
             --base02: #cccccc;
             --base04:#20292e;
             --base01: #afb6b9;
@@ -49,6 +60,7 @@
             --magenta: #c792ea;
             --violet: #bb80b3;
             --blue: #82aaff;
+            --cyan: #baecff;
             --cyan: #baecff;
             --green: #c3e88d;
         }
@@ -65,6 +77,7 @@
         }
 
         .code-font {
+            font-family: var(--code-font), monospace;
             font-family: var(--code-font), monospace;
         }
 
@@ -84,11 +97,20 @@
             background: var(--base02) !important;
         }
         .theme-toggle-btn:hover {
+            background: var(--base02) !important;
+        }
+        .theme-toggle-btn:hover {
             transform: scale(1.05);
         }
 
         .theme-toggle-btn i {
             transition: transform 0.3s ease;
+        }
+        .theme-toggle-btn:hover i{
+            color:var(--base3) !important;
+        }
+        #viewModalTitle,#closeViewModalBtn {
+            color:var(--base5) !important;
         }
         .theme-toggle-btn:hover i{
             color:var(--base3) !important;
@@ -141,6 +163,7 @@
             transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
+        header h1, #viewSnippetTitle, #viewSnippetDesc {
         header h1, #viewSnippetTitle, #viewSnippetDesc {
             color: var(--base02) !important;
         }
@@ -289,9 +312,13 @@
 
         .modal-header,#closeViewModalBtn2 {
             background-color: var(--base04) !important;
+        .modal-header,#closeViewModalBtn2 {
+            background-color: var(--base04) !important;
             border-color: var(--base1) !important;
         }
 
+        #closeViewModalBtn2  {
+            color: var(--base5) !important;
         #closeViewModalBtn2  {
             color: var(--base5) !important;
         }
@@ -327,6 +354,7 @@
         }
 
         .modal-footer {
+            background-color: var(--base2) !important;
             background-color: var(--base2) !important;
             border-color: var(--base1) !important;
         }
@@ -567,6 +595,7 @@
         }
 
         .code-language {
+            font-family: var(--code-font), monospace;
             font-family: var(--code-font), monospace;
             font-weight: 600;
             color: var(--base01);
