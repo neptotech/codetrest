@@ -14,14 +14,14 @@
 
         :root {
             /* Solarized Light (Default) */
-            --base03: #002b36;
             --base02: #073642;
+            --base04:#073642;
             --base01: #586e75;
             --base00: #657b83;
-            --base0: #839496;
             --base1: #93a1a1;
             --base2: #eee8d5;
             --base3: #fdf6e3;
+            --base5: #fdf6e3;
             --yellow: #b58900;
             --orange: #cb4b16;
             --red: #dc322f;
@@ -30,25 +30,26 @@
             --blue: #268bd2;
             --cyan: #2aa198;
             --green: #859900;
+            --code-font: 'Fira Code';
         }
 
         [data-theme="dark"] {
             /* Atom Material Dark Theme */
-            --base03: #263238;
-            --base02: #2e3c43;
-            --base01: #546e7a;
-            --base00: #b0bec5;
-            --base0: #cfd8dc;
-            --base1: #90a4ae;
-            --base2: #37474f;
-            --base3: #263238;
+            --base02: #cccccc;
+            --base04:#20292e;
+            --base01: #afb6b9;
+            --base00: #c5c5c5;
+            --base1: #7db2c5;
+            --base2: #232e33;
+            --base3: #263238; 
+            --base5: #cfd8dc;
             --yellow: #ffcb6b;
             --orange: #f78c6c;
             --red: #ff5370;
             --magenta: #c792ea;
             --violet: #bb80b3;
             --blue: #82aaff;
-            --cyan: #89ddff;
+            --cyan: #baecff;
             --green: #c3e88d;
         }
 
@@ -64,7 +65,7 @@
         }
 
         .code-font {
-            font-family: 'Fira Code', monospace;
+            font-family: var(--code-font), monospace;
         }
 
         /* Theme toggle button */
@@ -80,12 +81,20 @@
         }
 
         .theme-toggle-btn:hover {
-            background: var(--base2);
+            background: var(--base02) !important;
+        }
+        .theme-toggle-btn:hover {
             transform: scale(1.05);
         }
 
         .theme-toggle-btn i {
             transition: transform 0.3s ease;
+        }
+        .theme-toggle-btn:hover i{
+            color:var(--base3) !important;
+        }
+        #viewModalTitle,#closeViewModalBtn {
+            color:var(--base5) !important;
         }
 
         .theme-toggle-btn:active i {
@@ -132,7 +141,7 @@
             transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
-        header h1 {
+        header h1, #viewSnippetTitle, #viewSnippetDesc {
             color: var(--base02) !important;
         }
 
@@ -278,13 +287,13 @@
             border-color: var(--base1) !important;
         }
 
-        .modal-header {
-            background-color: var(--base02) !important;
+        .modal-header,#closeViewModalBtn2 {
+            background-color: var(--base04) !important;
             border-color: var(--base1) !important;
         }
 
-        .modal-header h2 {
-            color: var(--base1) !important;
+        #closeViewModalBtn2  {
+            color: var(--base5) !important;
         }
 
         .modal-header button {
@@ -318,7 +327,7 @@
         }
 
         .modal-footer {
-            background-color: var(--base3) !important;
+            background-color: var(--base2) !important;
             border-color: var(--base1) !important;
         }
 
@@ -440,7 +449,7 @@
         }
 
         .markdown-content code {
-            font-family: 'Fira Code', monospace;
+            font-family: var(--code-font), monospace;
             background: var(--base2);
             color: var(--cyan);
             padding: 0.2rem 0.4rem;
@@ -557,7 +566,7 @@
         }
 
         .code-language {
-            font-family: 'Fira Code', monospace;
+            font-family: var(--code-font), monospace;
             font-weight: 600;
             color: var(--base01);
             text-transform: uppercase;
@@ -599,43 +608,6 @@
             border-radius: 0 0 0.375rem 0.375rem;
             border-top-left-radius: 0;
             border-top-right-radius: 0;
-        }
-        /* Final dark theme heading + tab + snippet title overrides */
-        [data-theme="dark"] header h1,
-        [data-theme="dark"] .tab-btn,
-        [data-theme="dark"] .tab-btn.tab-active,
-        [data-theme="dark"] .card-hover h3,
-        [data-theme="dark"] #viewSnippetTitle,
-        [data-theme="dark"] .sidebar h2,
-        [data-theme="dark"] .sidebar h3 {
-            color: var(--base0) !important; /* lighter heading color in dark mode */
-        }
-
-        /* Make active tab pop a bit more in dark mode */
-        [data-theme="dark"] .tab-btn.tab-active {
-            color: var(--blue) !important;
-        }
-
-        /* Ensure default (non-active) tabs are slightly muted */
-        [data-theme="dark"] .tab-btn:not(.tab-active) {
-            color: var(--base1) !important;
-        }
-
-        /* Sidebar specific panel headings refinement */
-        [data-theme="dark"] .sidebar h2,
-        [data-theme="dark"] .sidebar h3 {
-            color: var(--base0) !important;
-        }
-
-        /* Force removal of hardcoded light color utility on dark */
-        [data-theme="dark"] .text-\[#073642\] {
-            color: var(--base0) !important;
-        }
-
-        /* Snippet modal title consistency */
-        [data-theme="dark"] #viewModalTitle,
-        [data-theme="dark"] #modalTitle {
-            color: var(--base0) !important;
         }
     </style>
 </head>

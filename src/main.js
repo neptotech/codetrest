@@ -39,52 +39,107 @@ let activeModalSnippetId = null;
 // Add this variable at the top with other state variables:
 let activeTags = []; // Array of selected tags
 
-// Theme management
+// Theme management with light/dark/auto
 const themeToggle = document.getElementById('themeToggle');
-let currentTheme = localStorage.getItem('theme') || 'light';
 
-function setTheme(theme) {
-    currentTheme = theme;
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-    
-    // Update toggle button icon
-    const icon = themeToggle.querySelector('i');
-    if (theme === 'dark') {
-        icon.classList.remove('fa-moon');
-        icon.classList.add('fa-sun');
-        themeToggle.title = 'Switch to light theme';
-    } else {
-        icon.classList.remove('fa-sun');
-        icon.classList.add('fa-moon');
-        themeToggle.title = 'Switch to dark theme';
+const THEME_KEY = 'codetrest-theme';
+const OLD_THEME_KEY = 'theme'; // for migration
+
+function getSystemTheme() {
+    const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return isDark ? 'dark' : 'light';
+}
+
+function logThemeDebug(context, details = {}) {
+    try {
+        const sys = getSystemTheme();
+        const stored = localStorage.getItem(THEME_KEY);
+        console.log('[theme]', context, { system: sys, stored, ...details });
+    } catch (_) {}
+}
+
+// migrate old key once
+(function migrateThemeKey(){
+    const legacy = localStorage.getItem(OLD_THEME_KEY);
+    const current = localStorage.getItem(THEME_KEY);
+    if (!current && legacy) {
+        localStorage.setItem(THEME_KEY, legacy);
+        localStorage.removeItem(OLD_THEME_KEY);
+        logThemeDebug('migrated-from-legacy', { legacy });
     }
-    
-    // Toggle highlight.js themes
+})();
+
+let currentTheme = localStorage.getItem(THEME_KEY) || 'auto';
+
+function applyThemeToDom(effectiveTheme) {
+    document.documentElement.setAttribute('data-theme', effectiveTheme);
+    // highlight.js theme switches (until fully removed)
     const lightTheme = document.getElementById('highlight-theme-light');
     const darkTheme = document.getElementById('highlight-theme-dark');
-    if (theme === 'dark') {
-        lightTheme.disabled = true;
-        darkTheme.disabled = false;
-    } else {
-        lightTheme.disabled = false;
-        darkTheme.disabled = true;
+    if (lightTheme && darkTheme) {
+        if (effectiveTheme === 'dark') {
+            lightTheme.disabled = true;
+            darkTheme.disabled = false;
+        } else {
+            lightTheme.disabled = false;
+            darkTheme.disabled = true;
+        }
     }
-    
+}
+
+function refreshTheme() {
+    const effective = currentTheme === 'auto' ? getSystemTheme() : currentTheme;
+    applyThemeToDom(effective);
+
+    // Update icon + title
+    const icon = themeToggle.querySelector('i');
+    icon.classList.remove('fa-moon', 'fa-sun', 'fa-circle-half-stroke');
+    if (currentTheme === 'auto') {
+        icon.classList.add('fa-circle-half-stroke');
+        themeToggle.title = `Auto (${effective})`;
+    } else if (currentTheme === 'dark') {
+        icon.classList.add('fa-sun');
+        themeToggle.title = 'Switch to auto';
+    } else {
+        icon.classList.add('fa-moon');
+        themeToggle.title = 'Switch to dark';
+    }
+
+    logThemeDebug('refresh', { currentTheme, effective });
+
     // Re-render current preview if open
     if (previewArea && snippetContent && snippetContent.value) {
         updateLivePreview();
     }
 }
 
+function setTheme(theme) {
+    currentTheme = theme;
+    localStorage.setItem(THEME_KEY, theme);
+    refreshTheme();
+}
+
 function toggleTheme() {
-    setTheme(currentTheme === 'light' ? 'dark' : 'light');
+    // cycle: light -> dark -> auto -> light
+    const next = currentTheme === 'light' ? 'dark' : currentTheme === 'dark' ? 'auto' : 'light';
+    setTheme(next);
 }
 
 // Initialize the app
 function init() {
-    // Apply saved theme
-    setTheme(currentTheme);
+    // Apply saved theme (or auto)
+    refreshTheme();
+
+    // Listen to system theme changes when in auto
+    if (window.matchMedia) {
+        const mql = window.matchMedia('(prefers-color-scheme: dark)');
+        mql.addEventListener?.('change', () => {
+            if (currentTheme === 'auto') {
+                logThemeDebug('system-change');
+                refreshTheme();
+            }
+        });
+    }
     
     renderAllSnippets();
     renderTagFilters();
