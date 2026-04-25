@@ -1,4 +1,8 @@
-const { invoke } = window.__TAURI__.core;
+const tauriApi = window.__TAURI__ || {};
+const invoke = tauriApi.core?.invoke || (async () => null);
+const openExternalUrl = tauriApi.opener?.openUrl || (async (url) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+});
 import { renderMarkdown, debounce, enhanceCodeBlocks } from './markdown-renderer.js';
 
 // DOM elements
@@ -604,7 +608,7 @@ function handleExternalLinks(container) {
         if (a && a.href && a.target !== '_blank') {
             e.preventDefault();
             try {
-                await window.__TAURI__.opener.openUrl(a.href);
+                await openExternalUrl(a.href);
             } catch (err) {
                 console.error('Failed to open link externally:', err);
             }

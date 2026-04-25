@@ -4,3 +4,4 @@ node_modules
 .release/*
 node_modules/*
 tests/
+dist/*
