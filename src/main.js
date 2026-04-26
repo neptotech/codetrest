@@ -65,6 +65,48 @@ function mimeFromPath(path, fallback = 'application/octet-stream') {
     return EXTENSION_TO_MIME[ext] || fallback;
 }
 
+async function setMediaFromLocalFile(element, path) {
+    try {
+        let base64Data;
+
+        if (readLocalFile) {
+            const bytes = await readLocalFile(path);
+            base64Data = bytesToBase64(bytes);
+        } else {
+            base64Data = await invoke('read_local_file_base64', { path });
+        }
+
+        const mime = mimeFromPath(path, element.tagName.toLowerCase().startsWith('image') ? 'image/*' : 'application/octet-stream');
+        element.setAttribute('src', `data:${mime};base64,${base64Data}`);
+
+        const parentMedia = element.closest('video, audio');
+        if (parentMedia && typeof parentMedia.load === 'function') {
+            parentMedia.load();
+        }
+        return true;
+    } catch (err) {
+        // If plugin/fs path failed, retry via backend invoke command.
+        if (readLocalFile) {
+            try {
+                const base64Data = await invoke('read_local_file_base64', { path });
+                const mime = mimeFromPath(path, element.tagName.toLowerCase().startsWith('image') ? 'image/*' : 'application/octet-stream');
+                element.setAttribute('src', `data:${mime};base64,${base64Data}`);
+                const parentMedia = element.closest('video, audio');
+                if (parentMedia && typeof parentMedia.load === 'function') {
+                    parentMedia.load();
+                }
+                return true;
+            } catch (fallbackErr) {
+                console.error('Failed to load local file URI media via both fs and invoke fallback:', path, fallbackErr);
+                return false;
+            }
+        }
+
+        console.error('Failed to load local file URI media:', path, err);
+        return false;
+    }
+}
+
 async function resolveLocalMediaUris(container) {
     if (!isTauriRuntime) return;
 
@@ -82,6 +124,11 @@ async function resolveLocalMediaUris(container) {
             try {
                 const mapped = convertLocalFileSrc(path);
                 if (mapped && !mapped.startsWith('about:blank')) {
+                    // If asset protocol mapping fails in a given environment,
+                    // fallback to embedding bytes as a data URL.
+                    element.addEventListener('error', () => {
+                        setMediaFromLocalFile(element, path);
+                    }, { once: true });
                     element.setAttribute('src', mapped);
                     continue;
                 }
@@ -90,15 +137,7 @@ async function resolveLocalMediaUris(container) {
             }
         }
 
-        if (!readLocalFile) continue;
-
-        try {
-            const bytes = await readLocalFile(path);
-            const mime = mimeFromPath(path, element.tagName.toLowerCase().startsWith('image') ? 'image/*' : 'application/octet-stream');
-            element.setAttribute('src', `data:${mime};base64,${bytesToBase64(bytes)}`);
-        } catch (err) {
-            console.error('Failed to load local file URI media:', src, err);
-        }
+        await setMediaFromLocalFile(element, path);
     }
 }
 

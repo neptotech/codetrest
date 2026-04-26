@@ -1,4 +1,5 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 use std::fs;
 use tauri::command;
 
@@ -16,6 +17,12 @@ fn load_snippets_from_documents() -> Result<String, String> {
     fs::read_to_string(&path).map_err(|e| e.to_string())
 }
 
+#[command]
+fn read_local_file_base64(path: String) -> Result<String, String> {
+    let bytes = fs::read(path).map_err(|e| e.to_string())?;
+    Ok(STANDARD.encode(bytes))
+}
+
 // #[tauri::command]
 // fn greet(name: &str) -> String {
 //     format!("Hello, {}! You've been greeted from Rust!", name)
@@ -28,7 +35,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             load_snippets_from_documents,
-            save_snippets_to_documents
+            save_snippets_to_documents,
+            read_local_file_base64
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
