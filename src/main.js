@@ -3,8 +3,104 @@ const invoke = tauriApi.core?.invoke || (async () => null);
 const openExternalUrl = tauriApi.opener?.openUrl || (async (url) => {
     window.open(url, '_blank', 'noopener,noreferrer');
 });
+const readLocalFile = tauriApi.fs?.readFile;
+const convertLocalFileSrc = tauriApi.core?.convertFileSrc;
+const isTauriRuntime = Boolean(tauriApi.core?.invoke);
 import 'katex/dist/katex.min.css';
 import { renderMarkdown, debounce, enhanceCodeBlocks } from './markdown-renderer.js';
+
+const EXTENSION_TO_MIME = {
+    apng: 'image/apng',
+    avif: 'image/avif',
+    bmp: 'image/bmp',
+    gif: 'image/gif',
+    ico: 'image/x-icon',
+    jpeg: 'image/jpeg',
+    jpg: 'image/jpeg',
+    png: 'image/png',
+    svg: 'image/svg+xml',
+    tif: 'image/tiff',
+    tiff: 'image/tiff',
+    webp: 'image/webp',
+    mp3: 'audio/mpeg',
+    m4a: 'audio/mp4',
+    ogg: 'audio/ogg',
+    wav: 'audio/wav',
+    flac: 'audio/flac',
+    mp4: 'video/mp4',
+    webm: 'video/webm',
+    mov: 'video/quicktime',
+    m4v: 'video/x-m4v',
+    avi: 'video/x-msvideo',
+    mkv: 'video/x-matroska',
+};
+
+function bytesToBase64(bytes) {
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 1) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+}
+
+function fileUriToPlatformPath(uri) {
+    try {
+        const parsed = new URL(uri);
+        if (parsed.protocol !== 'file:') return null;
+
+        let path = decodeURIComponent(parsed.pathname || '');
+        // Windows file URI: /C:/path -> C:/path
+        if (/^\/[A-Za-z]:\//.test(path)) {
+            path = path.slice(1);
+        }
+        return path;
+    } catch (_) {
+        return null;
+    }
+}
+
+function mimeFromPath(path, fallback = 'application/octet-stream') {
+    const parts = (path || '').split('.');
+    const ext = parts.length > 1 ? parts.pop().toLowerCase() : '';
+    return EXTENSION_TO_MIME[ext] || fallback;
+}
+
+async function resolveLocalMediaUris(container) {
+    if (!isTauriRuntime) return;
+
+    const mediaElements = container.querySelectorAll('img[src], source[src], video[src], audio[src]');
+
+    for (const element of mediaElements) {
+        const src = element.getAttribute('src');
+        if (!src || !src.startsWith('file://')) continue;
+
+        const path = fileUriToPlatformPath(src);
+        if (!path) continue;
+
+        // Preferred approach in Tauri: map local path to WebView-safe asset URL.
+        if (convertLocalFileSrc) {
+            try {
+                const mapped = convertLocalFileSrc(path);
+                if (mapped && !mapped.startsWith('about:blank')) {
+                    element.setAttribute('src', mapped);
+                    continue;
+                }
+            } catch (err) {
+                console.warn('convertFileSrc failed, falling back to file read:', src, err);
+            }
+        }
+
+        if (!readLocalFile) continue;
+
+        try {
+            const bytes = await readLocalFile(path);
+            const mime = mimeFromPath(path, element.tagName.toLowerCase().startsWith('image') ? 'image/*' : 'application/octet-stream');
+            element.setAttribute('src', `data:${mime};base64,${bytesToBase64(bytes)}`);
+        } catch (err) {
+            console.error('Failed to load local file URI media:', src, err);
+        }
+    }
+}
 
 // DOM elements
 const searchInput = document.getElementById('searchInput');
@@ -428,8 +524,9 @@ function showViewSnippetModal(snippetId) {
 
     // Update content with markdown rendering
     const contentContainer = document.getElementById('viewSnippetContent');
-    renderMarkdown(snippet.content).then(html => {
+    renderMarkdown(snippet.content).then(async html => {
         contentContainer.innerHTML = html;
+        await resolveLocalMediaUris(contentContainer);
         enhanceCodeBlocks(contentContainer);
     }).catch(err => {
         contentContainer.textContent = 'Error rendering markdown: ' + err;
@@ -585,6 +682,7 @@ async function updateLivePreview() {
     try {
         const html = await renderMarkdown(content);
         previewArea.innerHTML = html;
+        await resolveLocalMediaUris(previewArea);
         enhanceCodeBlocks(previewArea);
     } catch (err) {
         previewArea.textContent = 'Error rendering markdown: ' + err;

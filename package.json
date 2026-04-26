@@ -6,7 +6,8 @@
   "scripts": {
     "tauri": "tauri",
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "build:win-exe": "bash scripts/build-win-exe.sh"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",
