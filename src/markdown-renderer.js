@@ -4,18 +4,247 @@ import remarkRehype from 'remark-rehype';
 import rehypeStringify from 'rehype-stringify';
 import rehypePrettyCode from 'rehype-pretty-code';
 import rehypeHighlight from 'rehype-highlight';
+import rehypeRaw from 'rehype-raw';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import remarkImages from "remark-images";
+
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function transformMarkdownCollapsibles(md) {
+  const lines = md.split('\n');
+  const out = [];
+  const stack = [];
+  let inFence = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // Keep fenced code blocks untouched
+    if (/^```|^~~~/.test(trimmed)) {
+      inFence = !inFence;
+      out.push(line);
+      continue;
+    }
+
+    if (!inFence) {
+      const detailsOpen = trimmed.match(/^:::\s*details(?:\s+open)?(?:\s*\[(.+)\]|\s+(.+))?\s*$/i);
+      if (detailsOpen) {
+        const isOpen = /:::\s*details\s+open/i.test(trimmed);
+        const summaryRaw = (detailsOpen[1] || detailsOpen[2] || 'Details').trim();
+        const summary = escapeHtml(summaryRaw);
+        out.push(`<details${isOpen ? ' open' : ''}><summary>${summary}</summary>`);
+        stack.push('details');
+        continue;
+      }
+
+      if (trimmed === ':::' && stack.length > 0) {
+        stack.pop();
+        out.push('</details>');
+        continue;
+      }
+    }
+
+    out.push(line);
+  }
+
+  // Close any unclosed blocks to keep HTML balanced
+  while (stack.length > 0) {
+    stack.pop();
+    out.push('</details>');
+  }
+
+  return out.join('\n');
+}
+
+const extendedTagNames = [
+  'article',
+  'aside',
+  'blockquote',
+  'caption',
+  'col',
+  'colgroup',
+  'data',
+  'datalist',
+  'details',
+  'dialog',
+  'div',
+  'dl',
+  'dt',
+  'dd',
+  'figure',
+  'figcaption',
+  'footer',
+  'header',
+  'hgroup',
+  'hr',
+  'iframe',
+  'img',
+  'kbd',
+  'main',
+  'mark',
+  'menu',
+  'meter',
+  'nav',
+  'picture',
+  'progress',
+  'section',
+  'small',
+  'source',
+  'sub',
+  'summary',
+  'sup',
+  'time',
+  'u',
+  'var',
+  'video',
+  'audio',
+  'track',
+  'wbr',
+  'form',
+  'label',
+  'input',
+  'textarea',
+  'select',
+  'option',
+  'optgroup',
+  'button',
+  'fieldset',
+  'legend',
+  'output',
+  'canvas',
+  'map',
+  'area',
+  'abbr',
+  'cite',
+  'q',
+  's',
+  'ins',
+  'del',
+];
+
+const markdownSchema = {
+  ...defaultSchema,
+  protocols: {
+    ...defaultSchema.protocols,
+    href: ['http', 'https', 'mailto', 'tel', 'file', 'asset', 'blob'],
+    src: ['http', 'https', 'data', 'file', 'asset', 'blob'],
+    cite: ['http', 'https', 'file', 'asset'],
+    poster: ['http', 'https', 'data', 'file', 'asset', 'blob'],
+  },
+  tagNames: Array.from(new Set([...(defaultSchema.tagNames || []), ...extendedTagNames])),
+  attributes: {
+    ...defaultSchema.attributes,
+    '*': [
+      ...((defaultSchema.attributes && defaultSchema.attributes['*']) || []),
+      'className',
+      'id',
+      'style',
+      'title',
+      'lang',
+      'dir',
+      'tabindex',
+      'aria-label',
+      'aria-labelledby',
+      'aria-describedby',
+      'role',
+      'data-theme',
+      'data-language',
+      'data-state',
+      'data-open',
+    ],
+    a: [
+      ...((defaultSchema.attributes && defaultSchema.attributes.a) || []),
+      'target',
+      'rel',
+      'download',
+      'hreflang',
+      'referrerpolicy',
+    ],
+    img: [
+      ...((defaultSchema.attributes && defaultSchema.attributes.img) || []),
+      'loading',
+      'decoding',
+      'referrerpolicy',
+      'width',
+      'height',
+      'srcset',
+      'sizes',
+      'usemap',
+      'ismap',
+      'alt',
+    ],
+    iframe: [
+      'src',
+      'title',
+      'width',
+      'height',
+      'name',
+      'allow',
+      'allowfullscreen',
+      'loading',
+      'referrerpolicy',
+      'sandbox',
+      'frameborder',
+    ],
+    table: ['summary'],
+    td: ['colspan', 'rowspan', 'headers', 'align', 'valign'],
+    th: ['colspan', 'rowspan', 'headers', 'scope', 'align', 'valign'],
+    col: ['span', 'width'],
+    colgroup: ['span', 'width'],
+    ol: ['start', 'reversed', 'type'],
+    li: ['value'],
+    blockquote: ['cite'],
+    q: ['cite'],
+    time: ['datetime'],
+    data: ['value'],
+    details: ['open', 'name'],
+    summary: ['className'],
+    video: ['src', 'controls', 'autoplay', 'muted', 'loop', 'playsinline', 'poster', 'width', 'height', 'preload'],
+    audio: ['src', 'controls', 'autoplay', 'muted', 'loop', 'preload'],
+    source: ['src', 'type', 'srcset', 'sizes', 'media'],
+    track: ['default', 'kind', 'label', 'src', 'srclang'],
+    picture: ['className'],
+    form: ['action', 'method', 'enctype', 'autocomplete', 'novalidate', 'target', 'name'],
+    label: ['for'],
+    input: ['type', 'name', 'value', 'placeholder', 'checked', 'disabled', 'readonly', 'required', 'min', 'max', 'step', 'pattern', 'multiple', 'accept', 'autocomplete'],
+    textarea: ['name', 'rows', 'cols', 'placeholder', 'disabled', 'readonly', 'required', 'maxlength', 'minlength'],
+    select: ['name', 'multiple', 'disabled', 'required', 'size'],
+    option: ['value', 'selected', 'disabled', 'label'],
+    optgroup: ['label', 'disabled'],
+    button: ['type', 'name', 'value', 'disabled'],
+    fieldset: ['disabled', 'name'],
+    meter: ['value', 'min', 'max', 'low', 'high', 'optimum'],
+    progress: ['value', 'max'],
+    area: ['alt', 'coords', 'shape', 'href', 'target', 'rel', 'download'],
+    canvas: ['width', 'height'],
+    dialog: ['open'],
+  },
+};
 /**
  * Renders markdown to HTML with syntax highlighting and GFM support
  * @param {string} md - The markdown content to render
  * @returns {Promise<string>} - The rendered HTML
  */
 export async function renderMarkdown(md) {
+  const normalizedMarkdown = transformMarkdownCollapsibles(md);
+
   // Base pipeline with GitHub Flavored Markdown support
   let processor = remark()
     .use(remarkGfm) // Support tables, task lists, strikethrough, autolinks, etc.
+    .use(remarkMath) // Support inline/block LaTeX math
     .use(remarkImages) // Support image syntax
-    .use(remarkRehype); // Convert to HTML
+    .use(remarkRehype, { allowDangerousHtml: true })
+    .use(rehypeRaw)
+    .use(rehypeSanitize, markdownSchema);
 
   // Detect current theme
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -40,7 +269,10 @@ export async function renderMarkdown(md) {
   // Always include a simple fallback highlighter to cover non-Shiki cases
   processor = processor.use(rehypeHighlight);
 
-  const file = await processor.use(rehypeStringify).process(md);
+  // Render $...$ and $$...$$ via KaTeX
+  processor = processor.use(rehypeKatex);
+
+  const file = await processor.use(rehypeStringify).process(normalizedMarkdown);
   return String(file);
 }
 

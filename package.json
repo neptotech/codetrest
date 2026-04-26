@@ -14,13 +14,18 @@
   },
   "dependencies": {
     "@tauri-apps/plugin-fs": "^2.3.0",
+    "katex": "^0.16.45",
     "rehype-highlight": "^7.0.0",
+    "rehype-katex": "^7.0.1",
     "rehype-pretty-code": "^0.14.0",
+    "rehype-raw": "^7.0.0",
+    "rehype-sanitize": "^6.0.0",
     "rehype-stringify": "^10.0.0",
     "remark": "^15.0.0",
     "remark-gfm": "^4.0.0",
     "remark-html": "^16.0.0",
     "remark-images": "^4.1.0",
+    "remark-math": "^6.0.0",
     "remark-rehype": "^10.1.0",
     "shiki": "^1.22.0"
   }

@@ -3,6 +3,7 @@ const invoke = tauriApi.core?.invoke || (async () => null);
 const openExternalUrl = tauriApi.opener?.openUrl || (async (url) => {
     window.open(url, '_blank', 'noopener,noreferrer');
 });
+import 'katex/dist/katex.min.css';
 import { renderMarkdown, debounce, enhanceCodeBlocks } from './markdown-renderer.js';
 
 // DOM elements
